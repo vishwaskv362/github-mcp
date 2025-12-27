@@ -189,6 +189,76 @@ async def get_repo(owner: str, repo: str) -> str:
 
 
 @mcp.tool()
+async def create_repo(
+    name: str,
+    description: str = "",
+    private: bool = False,
+    auto_init: bool = False,
+    gitignore_template: str = "",
+    confirm: bool = False
+) -> str:
+    """
+    Create a new GitHub repository for the authenticated user.
+    Requires GITHUB_TOKEN with repo scope.
+
+    ⚠️  MUTATING OPERATION: Set confirm=True to actually create the repository.
+    If confirm=False, this will only preview what would be created.
+
+    Args:
+        name: Repository name (required)
+        description: Repository description (optional)
+        private: Whether the repo should be private (default: False = public)
+        auto_init: Initialize with a README (default: False)
+        gitignore_template: Gitignore template name, e.g., "Python", "Node" (optional)
+        confirm: Must be True to actually create the repo. If False, shows preview only.
+    """
+    if not GITHUB_TOKEN:
+        return "Error: GITHUB_TOKEN not set. Please configure your token."
+
+    # Build the payload
+    payload = {
+        "name": name,
+        "private": private,
+        "auto_init": auto_init,
+    }
+    if description:
+        payload["description"] = description
+    if gitignore_template:
+        payload["gitignore_template"] = gitignore_template
+
+    # Preview mode - show what would be created
+    if not confirm:
+        visibility = "private 🔒" if private else "public 🌐"
+        preview = f"""⚠️  PREVIEW - Repository will NOT be created until confirm=True
+
+Repository to create:
+  Name: {name}
+  Visibility: {visibility}
+  Description: {description or '(none)'}
+  Auto-init with README: {auto_init}
+  Gitignore template: {gitignore_template or '(none)'}
+
+To create this repository, call create_repo again with confirm=True"""
+        return preview
+
+    # Actually create the repository
+    data = await github_request("POST", "/user/repos", payload)
+
+    if isinstance(data, dict) and "error" in data:
+        return f"Error: {data['error']}"
+
+    visibility = "private 🔒" if data.get('private') else "public 🌐"
+    return f"""✅ Repository created successfully!
+
+  Name: {data.get('full_name')}
+  Visibility: {visibility}
+  Description: {data.get('description') or '(none)'}
+  URL: {data.get('html_url')}
+  Clone: {data.get('clone_url')}
+  SSH: {data.get('ssh_url')}"""
+
+
+@mcp.tool()
 async def list_my_repos(visibility: str = "all", sort: str = "updated", per_page: int = 10) -> str:
     """
     List repositories for the authenticated user.

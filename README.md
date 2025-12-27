@@ -92,6 +92,7 @@ Or add to Claude's MCP config with env:
 | `list_user_repos` | User's public repos | No |
 | `list_my_repos` | Your repos (inc. private) | Yes |
 | `get_repo` | Repo details | No |
+| `create_repo` | Create new repository (requires confirmation) | Yes |
 | `list_issues` | Repo issues | No |
 | `get_issue` | Single issue details | No |
 | `create_issue` | Create new issue | Yes |
@@ -101,6 +102,18 @@ Or add to Claude's MCP config with env:
 | `search_issues` | Search issues/PRs | No |
 | `list_workflows` | GitHub Actions workflows | No |
 | `list_workflow_runs` | Recent workflow runs | No |
+
+### Confirmation Pattern
+
+Mutating operations like `create_repo` require explicit confirmation to prevent accidental changes:
+
+```
+# Preview mode (default) - shows what would be created
+create_repo(name="my-project", description="My project")
+
+# Actually create the repo
+create_repo(name="my-project", description="My project", confirm=True)
+```
 
 ## Example Usage
 
